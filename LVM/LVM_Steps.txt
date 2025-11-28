@@ -1,0 +1,102 @@
+I have a volume group named rhel. Within that group I have two mounted volumes /var and /var/log. I want to extend /var and /var/log to a single hard drive that has two partitions /dev/vdd1 and /dev/vdd2
+-------------------------------------------------------------------------------------
+sudo fdisk /dev/vdb
+create 2 paritions vdb1 vdb2
+-------------------------------------------------------------------------------------
+Before making changes, confirm the state of your volume group and logical volumes:
+
+sudo vgdisplay rhel
+sudo lvdisplay rhel/var
+sudo lvdisplay rhel/var_log
+-------------------------------------------------------------------------------------
+Check if the partitions are already LVM physical volumes:
+
+sudo pvdisplay /dev/vdb1
+sudo pvdisplay /dev/vdb2
+
+-------------------------------------------------------------------------------------
+If they are not already LVM physical volumes, initialize them:
+
+sudo pvcreate /dev/vdb1
+sudo pvcreate /dev/vdb2
+
+-------------------------------------------------------------------------------------
+Extend the rhel volume group to include the new physical volumes:
+
+sudo vgextend rhel /dev/vdb1 /dev/vdb2
+
+-------------------------------------------------------------------------------------
+Verify the volume group now includes the new partitions:
+
+Check the “Free PE / Size” field to confirm the added capacity.
+
+vgdisplay rhel
+
+-------------------------------------------------------------------------------------
+OPTIONAL:
+Extend /var (e.g., add 50% of the available space or a specific size):
+
+lvextend -L +10G rhel/var
+
+Adjust the size as needed. To use all available space in the volume group for one logical volume, use:
+
+lvextend -l +100%FREE rhel/var
+
+-------------------------------------------------------------------------------------
+Alternatively, if you want to assign specific partitions:
+
+lvextend rhel/var /dev/vdb1       <-------equivalent to /dev/rhel/var
+lvextend rhel/var_log /dev/vdb2   <-------equivalent to /dev/rhel/var_log
+
+-------------------------------------------------------------------------------------
+Resize the File Systems:
+
+For ext4 filesystems:
+
+resize2fs /dev/rhel/var
+resize2fs /dev/rhel/var/log
+
+For XFS filesystems:
+
+xfs_growfs /var
+xfs_growfs /var/log
+-------------------------------------------------------------------------------------
+Resize cryptsetup LUKS:
+
+cryptsetup resize <crypt-id-number> (i.e.: luks-8825ae53-dbd2-459b-9cd9-1eb5dcfcaa89)
+
+sudo cryptsetup resize luks-453d894a-bcbf-49fb-8130-930b5a7e0eb3 (example for var)
+sudo cryptsetup resize luks-d38a38e3-8759-4428-87d8-ba463e39e74f (example for var_log)
+-------------------------------------------------------------------------------------
+Before:
+
+vdb                                             252:16   0   20G  0 disk  
+├─vdb1                                          252:17   0   10G  0 part  
+│ └─rhel-var                                    253:7    0   15G  0 lvm   
+│   └─luks-453d894a-bcbf-49fb-8130-930b5a7e0eb3 253:13   0    5G  0 crypt /var
+└─vdb2                                          252:18   0   10G  0 part  
+  └─rhel-var_log                                253:8    0   15G  0 lvm   
+    └─luks-d38a38e3-8759-4428-87d8-ba463e39e74f 253:12   0    5G  0 crypt /var/log
+
+
+After:
+
+vdb                                             252:16   0   20G  0 disk  
+├─vdb1                                          252:17   0   10G  0 part  
+│ └─rhel-var                                    253:7    0   15G  0 lvm   
+│   └─luks-453d894a-bcbf-49fb-8130-930b5a7e0eb3 253:13   0   15G  0 crypt /var
+└─vdb2                                          252:18   0   10G  0 part  
+  └─rhel-var_log                                253:8    0   15G  0 lvm   
+    └─luks-d38a38e3-8759-4428-87d8-ba463e39e74f 253:12   0   15G  0 crypt /var/log
+
+-------------------------------------------------------------------------------------
+1) Add Hard Drive
+2) Partition Hard Drive (then sudo partprobe)
+3) pvs, vgs, lvs
+4) pvcreate /dev/vdb1
+5) vgextend rhel /dev/vdb1
+6) lvextend -r -l 100%FREE /dev/rhel/var_log
+6a) lvtextend -r -L +10G /dev/rhel/var_log
+7) cryptsetup resize <crypt-id-number> (i.e.: luks-8825ae53-dbd2-459b-9cd9-1eb5dcfcaa89)
+8) xfs_growfs /dev/mapper/rhel/var_log 
+9) lsblk and df -h

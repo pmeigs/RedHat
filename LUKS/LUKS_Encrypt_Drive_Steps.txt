@@ -1,0 +1,34 @@
+mv /opt /opt2
+
+mkdir /opt
+
+lsblk
+
+fdisk /dev/sdb
+
+mkfs.xfs /dev/sdb1
+
+cryptsetup luksFormat /dev/sdb1
+
+crypsetup luksOpen /dev/sdb1 opt-encrypt
+
+mkfs.xfs /dev/mapper/opt-encrypt
+
+cryptsetup luksClose opt-encrypt
+
+dd if=/dev/urandom of=/LuksKey/opt-encrypt.key bs=1024 count=4
+
+cryptsetup luksAddKey /LuksKey/opt-encrypt.key
+
+vi /etc/fstab
+
+/dev/mapper/opt-encrypt /opt xfs defaults,nodev,noexec,nosuid,x-systemd.device-timeout=0 0 0
+
+blkid
+
+vi /etc/crypttab
+
+opt-encrypt UUID=64c4480d-ee25-421d-a76b-1c2d89501db5 /LuksKey/opt-encrypt.key discard,keyfile-timeout=15s
+
+reboot
+
