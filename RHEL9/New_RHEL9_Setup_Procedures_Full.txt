@@ -1,0 +1,555 @@
+sudo vi /etc/modprobe.d/uas.conf
+install uas /bin/false
+blacklist uas
+
+sudo cp uas.conf /etc/modprobe.d/uas.conf
+
+sudo cp bluetooth.conf /etc/modprobe.d/bluetooth.conf
+sudo systemctl disable bluetooth.service
+sudo systemctl mask bluetooth.service
+sudo systemctl stop bluetooth.service & sudo systemctl mask bluetooth.service &
+sudo systemctl stop bluetooth.service
+
+sudo rmmod bnep
+sudo rmmod bluetooth
+sudo rmmod btusb
+
+----------
+
+sudo vi /etc/polkit-1/rules.d/31-NetworkManager.rules
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.NetworkManager.network-control") {
+        return polkit.Result.AUTH_ADMIN;
+    }
+});
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.NetworkManager.enable-disable-wifi") {
+        return polkit.Result.AUTH_ADMIN;
+    }
+});
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.NetworkManager.settings.modify.system") {
+        return polkit.Result.AUTH_ADMIN;
+    }
+});
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.NetworkManager.settings.modify.own") {
+        return polkit.Result.AUTH_ADMIN;
+    }
+});
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.NetworkManager.wifi.share.open") {
+        return polkit.Result.AUTH_ADMIN;
+    }
+});
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.NetworkManager.wifi.share.protected") {
+        return polkit.Result.AUTH_ADMIN;
+    }
+});
+
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.NetworkManager.enable-disable-network") {
+        return polkit.Result.AUTH_ADMIN;
+    }
+});
+
+sudo cp 31-NetworkManager.rules /etc/polkit-1/rules.d/31-NetworkManager.rules
+sudo md5sum /etc/polkit-1/rules.d/31-NetworkManager.rules
+
+----------
+
+sudo vi /etc/polkit-1/rules.d/100-stop-reboot.rules
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.login1.power-off" ||
+        action.id == "org.freedesktop.login1.power-off-multiple-sessions" ||
+        action.id == "org.freedesktop.login1.reboot" ||
+        action.id == "org.freedesktop.login1.reboot-multiple-sessions" ||
+        action.id == "org.freedesktop.login1.inhibit-block-shutdown" ||
+        action.id == "org.freedesktop.login1.inhibit-delay-shutdown" ||
+        action.id == "org.freedesktop.login1.suspend" ||
+        action.id == "org.freedesktop.login1.suspend-ignore-inhibit" ||
+        action.id == "org.freedesktop.login1.hibernate" ||
+        action.id == "org.freedesktop.login1.poweroff-multiple-sessions") {
+        if(subject.isInGroup("root")) {
+            return polkit.Result.YES;
+        } else {
+            return polkit.Result.NO;
+        }
+    }
+});
+
+sudo cp 100-stop-reboot.rules /etc/polkit-1/rules.d/100-stop-reboot.rules
+sudo systemctl restart polkit.service
+
+ps aux | grep gnome-shell
+sudo pkill -p <pid> -a org.freedesktop.login1.power-off
+sudo pkill -p <pid> -a org.freedesktop.login1.power-off-multiple-sessions
+sudo pkill -p <pid> -a org.freedesktop.login1.reboot
+sudo pkill -p <pid> -a org.freedesktop.login1.reboot-multiple-sessions
+sudo pkill -p <pid> -a org.freedesktop.login1.inhibit-block-shutdown
+sudo pkill -p <pid> -a org.freedesktop.login1.inhibit-delay-shutdown
+sudo pkill -p <pid> -a org.freedesktop.login1.suspend
+sudo pkill -p <pid> -a org.freedesktop.login1.suspend-ignore-inhibit
+sudo pkill -p <pid> -a org.freedesktop.login1.hibernate
+sudo pkill -p <pid> -a org.freedesktop.login1.poweroff-multiple-sessions
+
+----------
+
+cd /etc/dconf/db/local.d/locks/20-power
+/org/gnome/settings-daemon/plugins/power
+
+sudo grep "power-button-action='nothing'" /etc/dconf/db/local.d/20-power
+
+sudo rm /etc/dconf/db/local.d/00-security-settings
+/etc/dconf/db/local.d/00-banner-message
+sudo dconf update /org/gnome/login-screen/
+
+# Do Not start the logrotate.service
+sudo dnf install rsyslog-logrotate logrotate
+sudo systemctl start logrotate.timer
+sudo logrotate -f /etc/logrotate.conf
+
+The logrotate.timer will trigger logrotate.service and rsyslog-logrotate.service to run.
+
+----------
+
+# Need Update Every maintenance?
+sudo cp 80-coredump.conf /usr/lib/sysctl.d/ & sudo sysctl --system
+sudo cp 10-default-yama-scope.conf /usr/lib/sysctl.d/ & sudo sysctl --system
+sudo chmod 640 /root/.bash_logout & sudo chmod /root/.bash_profile
+
+sudo chmod 750 /opt/splunkforwarder/spl
+sudo cp 80-default.conf /usr/lib/sysctl.d/ & sudo sysctl --system
+
+Add the following lines at the end of /etc/vimrc
+syntax off
+set nohlsearch
+set t_Co=0
+
+----------
+
+sudo cat /etc/audit/auditd.conf | grep max_log_file
+max_log_file_action = ROTATE
+sudo cat /etc/audit/auditd.conf | grep max_log_file_action = ROTATE/g /etc/audit/auditd.conf
+sudo sed -i s/keep_logs/IGNORE/g /etc/audit/auditd.conf
+
+sudo cat /etc/audit/auditd.conf | grep num_logs
+num_logs = 5
+sudo sed -i s/num_logs = 5/num_logs = 99/g /etc/audit/auditd.conf
+
+sudo system status auditd.service
+
+sudo cat /etc/logrotate.d/aide | grep log_dir
+sudo cat /etc/logrotate.d/aide | grep weekly (or daily)
+sudo cat /etc/logrotate.d/syslog | grep log_dir
+sudo cat /etc/logrotate.d/syslog | grep weekly (or daily)
+
+sudo cp -/rhel_disa/USER/Logrotate/etc/cron.daily/logrotate
+sudo cp -/rhel_disa/USER/Logrotate/etc/logrotate.d/syslog /etc/logrotate.d/
+sudo cp -/rhel_disa/USER/Logrotate/etc/logrotate.d/logrotate.d/logrotate.d/
+
+----------
+
+cd /rhel_disa/USER/DIRLOC_Logrotate/RHEL9
+
+sudo rpm --import RPM-GPG-KEY-sdirpmbuilder-public
+
+sudo dnf localinstall DIRLOC-SetLogRotate-e19-2024.1.9-1.noarch.rpm
+
+sudo dnf localinstall DIRLOC-SetLogRotate-e19-2024.1.9-1.noarch.rpm --nogpgcheck
+
+sudo ls -al /root/DIRLOC/LogRotate/Files
+-rw-r--r--. 1 root root 155 Nov 17 21:02 aide_backup-2025-11-17
+-rw-r--r--. 1 root root 1353 May 21 2023 logrotate_aide
+-rw-r-x---. 1 root root 3906 Jul 22 2024 logrotate_syslog
+-rw-r--r--. 1 root root 226 Nov 17 21:02 syslog_backup-2025-11-17
+
+sudo cp /etc/audit/auditd.conf /etc/audit/auditd.conf.orig
+
+To Restore log files:
+sudo ls -al /root/DIRLOC/LogRotate/scripts/Install Logrotate.sh
+
+sudo mv /etc/rsyslog.conf /etc/rsyslog.conf.orig & sudo cp
+rhel_disa/USER/rsyslog/Configs/Client/rsyslog.conf /etc/rsyslog.conf
+
+#Ansible-Playbook (error if trying to use)
+sudo setsebool -P use_nfs_home_dirs=true
+
+----------
+
+cd
+-/rhel_disa/USER/DIRLOC-Splunk/1.0.1/Install_Script_Splunk_Ray_1.0.1_Release/ForwarderFiles
+
+sudo rpm -ivh splunkforwarder-9.3.1-0b087690cb12.x86_64.rpm
+sudo chown -R root: /opt/splunkforwarder/bin/splunk enable boot-start -systemd-managed 1 --user root -group root --accept-license --gen-and-print-passwd
+
+# Randomly generated admin password:
+$ U P B R
+
+# Enable again due to bug
+sudo /opt/splunkforwarder/bin/splunk enable boot-start -systemd-managed 1 --user root -group root
+sudo vi /etc/systemd/system/SplunkForwarder.service
+# Add this to file and add after LimitNOFILE=65536
+UMask=0022
+
+sudo systemctl daemon-reload
+sudo /opt/splunkforwarder/bin/splunk set deploy-poll splunk:8089
+sudo /opt/splunkforwarder/bin/splunk list deploy-poll
+
+# If there are permission denied errors or doesn't run then
+# /opt/splunkforwarder/bin/splunk disable boot-start
+# and then run 'sudo /opt/splunkforwarder/bin/splunk enable boot-start -systemd-managed 1 --user root -group root'
+
+sudo systemctl enable --now SplunkForwarder
+
+# Add cron entry
+crontab -e
+# Doesn't work according to TIG
+*/10 * * * * find /opt/splunkforwarder/etc/apps/ \(-name \*.sh -o -type d \) ! -perm -u=rwx,g=rwx,o=rx -exec chmod 755 {} \;
+
+# Modified Cron Job
+*/10 * * * sudo find /opt/splunkforwarder/etc/apps -name *.sh -o -type d ! -perm -u=rwx,g=rwx,o=rx -exec chmod 755 {} \;
+
+# Splunk Forwarder
+
+----------
+
+sudo cp /etc/fapolicyd/compiled.rules /etc/fapolicyd/compiled.rules.orig
+sudo cp -/rhel_disa/USER/Fapolicyd/etc/fapolicyd/rules.d/88-scc-scap.rules /etc/fapolicyd/rules.d/
+sudo fagenrules --load
+sudo cat /etc/fapolicyd/compiled.rules
+sudo systemctl restart fapolicyd.service
+
+sudo cat /etc/fapolicyd/fapolicyd.conf | grep permissive
+permissive = 1
+
+#Start the daemon manually
+sudo fapolicyd --debug-deny 2> fapolicyd.out
+sudo fapolicyd --permissive --debug 2> fapolicyd.out
+Look for a decision to deny:
+"dec=deny"
+
+sudo cat /etc/fapolicyd/fapolicyd.trust
+
+sudo fapolicyd-cli --file add /opt/scc-remote/lib64/cscc64
+sudo fapolicyd-cli --file add /opt/scc-remote/cscc-remote
+
+sudo fapolicyd-cli --file add /opt/scc-remote/lib64/cscc64 & sudo fapolicyd-cli
+--file add /opt/scc-remote/cscc-remote
+
+sudo fapolicyd-cli -u
+
+sudo cat /etc/fapolicyd/fapolicyd.trust
+
+----------
+
+sudo dnf install clevis clevis-luks clevis-dracut
+
+sudo grubby --update-kernel=ALL --args="rd.neednet=1"
+sudo dracut -fv --regenerate-all
+
+# Okra = Tang Server
+
+sudo clevis luks bind -d /dev/mapper/rhel-root tang '{"url":"http://192.168.12.69:7500"}'
+
+sudo clevis luks bind -d /dev/mapper/rhel-swap tang '{"url":"http://192.168.12.69:7500"}'
+
+sudo clevis luks bind -d /dev/mapper/rhel-home tang '{"url":"http://192.168.12.69:7500"}'
+
+sudo clevis luks bind -d /dev/mapper/rhel-tmp tang '{"url":"http://192.168.12.69:7500"}'
+
+sudo clevis luks bind -d /dev/mapper/rhel-var tang '{"url":"http://192.168.12.69:7500"}'
+
+sudo clevis luks bind -d /dev/mapper/rhel-var_log tang '{"url":"http://192.168.12.69:7500"}'
+
+sudo clevis luks bind -d /dev/mapper/rhel-var_log_audit tang '{"url":"http://192.168.12.69:7500"}'
+
+----------
+
+sudo vi /etc/chrony.conf
+
+#Pool 2.rhel.pool.ntp.org iburst maxpoll 16
+server 192.168.2.254 iburst maxpoll 16
+
+sudo sed -i 's/root/sysadmin/g' /etc/grub.d/01_users
+
+sudo cat /etc/grub.d/01_users
+[Modo] password for user-admin:
+cat << EOF
+if [ -f \$prefix/user.cfg ]; then
+    source \$prefix/user.cfg
+    if [ -n "\${GRUB2_PASSWORD}" ]; then
+        set sysadmins="sysadmin"
+        export sysadmins
+        password_pbkdf2 sysadmin \${GRUB2_PASSWORD};
+    fi
+EOF
+
+RHEL9:
+sudo grub2-setpassword sysadmin
+sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+
+RHEL8:
+sudo grub2-mkpasswd-pbkdf2
+sudo grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+sudo grub2-mkconfig -o /boot/efi/EFI/redhat/grubx64.cfg
+
+----------
+
+/etc/yum.repos.d/oracle.repo
+
+[BaseOS]
+name = BaseOS RHEL 9
+baseurl = http://oracle.domain.local/RHN/rhel-9-for-x86_64-baseos-rpms/
+enabled = 1
+gpgcheck = 1
+gpgkey = http://oracle.domain.local/RHN/rhel-9-for-x86_64-baseos-rpms/RPM-GPG-KEY-redhat-release
+
+[AppStream]
+name = Appstream RHEL 9
+baseurl = http://oracle.domain.local/RHN/rhel-9-for-x86_64-appstream-rpms/
+enabled = 1
+gpgcheck = 1
+gpgkey = http://oracle.domain.local/RHN/rhel-9-for-x86_64-appstream-rpms/RPM-GPG-KEY-redhat-release
+
+[RISReleaserver]
+enabled = 1
+gpgcheck = 1
+gpgkey = http://oracle.domain.local/RIS/RHEL9/RTS_DTCS_GPG_KEY
+name = RIS $Releaserver
+
+[Extras]
+name = Extra Packages
+baseurl = http://oracle.domain.local/EXTRAS
+enabled = 1
+gpgcheck = 1
+gpgkey = http://oracle.domain.local/etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+
+----------
+
+/etc/sudoers
+sudo visudo Secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin/
+# Allows people in group wheel to run all commands
+%wheel  ALL=(ALL)       ALL
+
+sudo visudo
+
+Defaults    secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+# Allows people in group wheel to run all commands
+%wheel  ALL=(ALL)       ALL
+
+# Not Used any more
+sudo vi /etc/auto.direct
+#/var/lib/clamav   -ro,nosuid,noexec,nodev oracle.domain.local:/var/lib/clamav
+
+sudo systemctl restart autofs
+
+----------
+
+sudo dnf remove clam*
+sudo dnf install clamav --nogpgcheck
+
+Package Architecture Version Repository Size
+clamav x86_64 1.5.0 beta-1 Extras 40 M
+
+sudo mkdir -p /var/log/ClamAV/VIRUS
+sudo mkdir -p /var/clamav/quarantine
+
+sudo useradd clamav -s /sbin/nologin -d /home/clamav -c "Clamav user" & sudo mkdir -p /var/lib/clamav & sudo chown -R clamav: /var/lib/clamav/
+
+sudo cp freshclam.conf /usr/local/etc/ & sudo ln -s /usr/local/etc/freshclam.conf /etc/freshclam.conf
+
+sudo touch /var/log/freshclam.log & sudo chown clamav: /var/log/freshclam.log
+
+# sudo vi /usr/local/etc/freshclam.conf
+DatabaseMirror http://clamav.domain.local
+#Feshclam's Default Location: /usr/local/share/clamav/
+UpdateLogFile /var/log/freshclam.log
+DatabaseDirectory /var/lib/clamav
+
+----------
+
+# If ClamAV does not start in the cron job then reset the root passwd. It may have expired.
+
+sudo crontab -e
+
+#Ansible: Weekly Virus Scan
+#15 1 * * 0 /usr/bin/virus_scan.sh
+
+#TSPS Checks
+00 4 * * * /usr/local/TSPS_Nix_Package/audit/bin/logcollect -a
+30 4 * * * /usr/local/TSPS_Nix_Package/audit/bin/logcollect -r
+45 * * * * chmod -R 755 /opt/splunkforwarder/etc/apps/ \*.bin/*
+
+# AIDE specific checks.
+01 3 * * 6 /usr/sbin/aide --init
+30 3 * * 6 /bin/cp /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+45 3 * * * /usr/bin/aide --check
+
+# Splunk Forwarder
+
+*/10 * * * * sudo find /opt/splunkforwarder/etc/apps -name *.sh -o -type d ! -perm -u=rwx,g=rwx,o=rx -exec chmod 755 {} \;
+
+# Weekly
+
+*/10 * * * * sudo find /opt/splunkforwarder/etc/apps -name *.sh -o -type d ! -perm -u=rwx,g=rwx,o=rx -exec chmod 755 {} \;
+
+#Freshclam Update
+0 4 * * 1,3,5 freshclam
+
+----------
+
+sudo dnf install autofs
+sudo systemctl enable --now autofs
+
+krb5-workstation
+
+cd /etc/crypto-policies/back-ends
+sudo mv nss.config nss.config.orig
+sudo ln -s /usr/share/crypto-policies/FIPS/nss.txt nss.config
+
+cd /usr/share/crypto-policies/FIPS/
+sudo mv krb5.txt krb5.txt .orig
+sudo ln -s /etc/krb5.conf.d/crypto-policies /usr/share/crypto-policies/FIPS/krb5.txt
+sudo realm join domain.local -U user-admin
+
+----------
+
+/etc/krb5.conf
+
+# To opt out of the system crypto-policies configuration of krb5, remove the
+# symlink at /etc/krb5.conf.d/crypto-policies which will not be recreated.
+includedir /etc/krb5.conf.d/
+
+[logging]
+ default = FILE:/var/log/krb5libs.log
+ kdc = FILE:/var/log/krb5kdc.log
+ admin_server = FILE:/var/log/kadmind.log
+
+[libdefaults]
+ dns_lookup_realm = false
+ ticket_lifetime = 24h
+ renew_lifetime = 7d
+ forwardable = true
+ rdns = false
+ pkinit_anchors = FILE:/etc/pki/tls/certs/ca-bundle.crt
+ spake_preauth_groups = edwards25519
+ dns_canonicalize_hostname = fallback
+ qualify_shortname = ""
+ default_realm = DOMAIN.LOCAL
+ default_ccache_name = KEYRING:persistent:%{uid}
+
+udp_preference_limit = 0
+
+[realms]
+ DOMAIN.LOCAL = {
+  kdc = dc01.domain.local
+  admin_server = dc01.domain.local
+ }
+
+[domain_realm]
+ .domain.local = DOMAIN.LOCAL
+ domain.local = DOMAIN.LOCAL
+
+----------
+
+/etc/sssd/sssd.conf
+
+[pam]
+pam_cert_auth=True
+offline_credentials_expiration=1
+
+[sssd]
+domains = domain.local
+config_file_version = 2
+services = nss, pam
+
+[domain/domain.local]
+default_shell = /bin/bash
+krb5_store_password_if_offline = True
+cache_credentials = False
+krb5_realm = DOMAIN.LOCAL
+realmd_tags = manages-system joined-with-adcli
+id_provider = ad
+ldap_sasl_authid = OPIR-RHEL9-TESTS
+fallback_homedir = /home/%u@%d
+override_homedir = /home/%u%d
+ad_domain = domain.local
+use_fully_qualified_names = False
+ldap_id_mapping = True
+access_provider = ad
+
+----------
+
+sudo dnf install nfs-utils
+sudo mkdir -p /gswshare
+
+sudo cat /etc/auto.master
+/home   /etc/auto.home
+/- /etc/auto.direct
+
+sudo cat /etc/auto.direct for user-admin:
+[/sudo] password for user-admin:
+
+/var/lib/clamav   -ro,nosuid,noexec,nodev oracle.domain.local:/array/gswshare/clamav
+
+*   -rw,noexec,nosuid,nodev   lindops.domain.local:/home/&
+
+Vul ID: V-258131
+
+$ sudo openssl x509 -text -in /etc/sssd/pki/sssd_auth_ca_db.pem
+/etc/sssd/pki/sssd_auth_ca_db.pem
+
+----------
+
+sudo cat /etc/chrony.conf
+server mainswitch.domain.local iburst maxpoll 16
+server 192.168.2.254 iburst maxpoll 16
+
+mainswitch.domain.local [192.168.0.254]
+
+----------
+
+/var/lib/clamav   -ro,nosuid,noexec,nodev oracle.domain.local:/array/gswshare/clamav
+
+sudo cat /etc/auto.home
+* -rw,noexec,nosuid,nodev   lindops.domain.local:/home/&
+
+Vul ID: V-258131
+
+$ sudo openssl x509 -text -in /etc/sssd/pki/sssd_auth_ca_db.pem
+/etc/sssd/pki/sssd_auth_ca_db.pem
+
+sudo cat /etc/chrony.conf
+server mainswitch.domain.local iburst maxpoll 16
+server 192.168.2.254 iburst maxpoll 16
+
+mainswitch.domain.local [192.168.0.254]
+
+----------
+
+----------
+
+----------
+
+----------
+
+----------
+
+----------
+
+----------
+
+----------
+
+----------
+
+----------
+
+----------
