@@ -1,0 +1,80 @@
+https://www.youtube.com/watch?v=OYE0OsWjd6M
+ 
+sudo cryptsetup -v luksFormat /dev/sdc1
+sudo cryptsetup -v luksFormat /dev/sdd1
+ 
+sudo cryptsetup luksOpen /dev/sdc1 ITAR
+sudo cryptsetup luksOpen /dev/sdd1 ITAR-Backup
+ 
+To Close:
+sudo cryptsetup luksClose ITAR
+sudo cryptsetup luksClose ITAR-Backup
+ 
+ls /dev/mapper
+ 
+sudo mkfs.ext4 /dev/mapper/ITAR
+sudo mkfs.ext4 /dev/mapper/ITAR-Backup
+ 
+fstab:
+/dev/mapper/ITAR /home/ITAR ext4 defaults 0 0
+/dev/mapper/ITAR-Backup /home/ITAR-Backup ext4 defaults 0 0
+ 
+crypttab:
+# <target name> <source device>         <key file>      <options>
+ITAR /dev/sdc1 none
+ITAR-Backup /dev/sdd1 none
+ 
+/dev/sdc1 = B@d3ncrypt!0n
+/dev/sdd1 = B@d3ncrypt!0n2
+ 
+ 
+Folder Permissions:
+sudo setfacl -b ITAR/
+sudo setfacl -b ITAR/Projects/
+sudo setfacl -m group:ITAR-Projects:rwx /home/ITAR/Projects/
+sudo setfacl -m group:ITAR:rwx /home/ITAR
+sudo setfacl -m group:ITAR-Projects-ReadOnly:rx /home/ITAR/Projects/
+sudo setfacl -R -m d:g:ITAR:rwx /home/ITAR/
+sudo setfacl -R -m d:g:ITAR-Projects:rwx /home/ITAR/Projects/
+ 
+pmeigs@OAK1-NAD-ITAR01:/home/ITAR2$ sudo getfacl /home/ITAR
+getfacl: Removing leading '/' from absolute path names
+# file: home/ITAR
+# owner: root
+# group: ITAR
+# flags: -s-
+user::rwx
+group::r-x
+group:ITAR:rwx
+mask::rwx
+other::rwx
+default:user::rwx
+default:group::r-x
+default:group:ITAR:rwx
+default:mask::rwx
+default:other::rwx
+ 
+pmeigs@OAK1-NAD-ITAR01:~$ lsblk
+NAME            MAJ:MIN RM   SIZE RO TYPE  MOUNTPOINT
+sda               8:0    0 931.5G  0 disk
+├─sda1            8:1    0 930.6G  0 part
+│ └─md0           9:0    0 930.4G  0 raid1
+│   ├─md0p1     259:0    0 929.5G  0 part  /
+│   ├─md0p2     259:1    0     1K  0 part
+│   └─md0p5     259:2    0 976.9M  0 part  [SWAP]
+├─sda2            8:2    0     1K  0 part
+└─sda5            8:5    0   976M  0 part
+sdb               8:16   0 931.5G  0 disk
+└─sdb1            8:17   0 931.5G  0 part
+  └─md0           9:0    0 930.4G  0 raid1
+    ├─md0p1     259:0    0 929.5G  0 part  /
+    ├─md0p2     259:1    0     1K  0 part
+    └─md0p5     259:2    0 976.9M  0 part  [SWAP]
+sdc               8:32   0 931.5G  0 disk
+└─sdc1            8:33   0 931.5G  0 part
+  └─ITAR2       253:0    0 931.5G  0 crypt /home/ITAR2
+sdd               8:48   0 931.5G  0 disk
+└─sdd1            8:49   0 931.5G  0 part
+  └─ITAR-Backup 253:1    0 931.5G  0 crypt /home/ITAR-Backup
+sde               8:64   1 238.3G  0 disk
+└─sde1            8:65   1 238.3G  0 part  /mnt/usb

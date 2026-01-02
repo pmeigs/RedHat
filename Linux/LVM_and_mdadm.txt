@@ -1,0 +1,50 @@
+Remove mdadm RAID:
+https://bobcares.com/blog/removal-of-mdadm-raid-devices/
+
+https://www.thomas-krenn.com/en/wiki/Mdadm_recovery_and_resync
+
+https://unix.stackexchange.com/questions/703895/how-to-configure-mdadm-conf-properly
+
+https://ahelpme.com/linux/recovering-md-array-and-mdadm-cannot-get-array-info-for-dev-md0/
+
+https://superuser.com/questions/1193290/best-order-of-raid-lvm-and-luks
+
+Create RAID 1 Mirror:
+sudo mdadm --create --verbose /dev/md0 --level=1 --raid-devices 2 /dev/xvdb1 /dev/xvdc1
+sudo cat /proc/md0
+sudo mdadm -D /dev/md0
+sudo mkfs.etx4 (or xfs) /dev/md0
+
+Unmount and stop RAID device:
+sudo umount /dev/md0
+sudo umount -f /dev/md0
+sudo mdadm --stop /dev/md0
+
+Create RAID 5 (parity) and add another disk (grow):
+sudo mdadm --create /dev/md0 -a yes -l 5 -n 2 /dev/sdb1 /dev/sdc1
+sudo cat /proc/mdstat
+sudo mdadm --add /dev/md0 /dev/sdd1
+sudo adadm --grao /dev/md0 --raid-disk=3
+sudo cat /proc/mdstat
+e2fsck -f /dev/md0 (check raid disk for errors)
+resize2fs -p /dev/md0 (extend filesystem)
+mdadm --examine --scan >> /etc/mdadm.conf (updates configuration file)
+
+Change from RAID 0 to RAID 5 without losing data:
+sudo mdadm --grow /dev/md0 --level=5 --raid-devices=3 --add /dev/sdd1 --backup-file/tmp/grow_md0.bak
+sudo cat /proc/mdstat
+
+How to add a disk to a Logical Volume Group:
+http://www.computers-it.com/linux/linux_add_new_disk_to_VG.php
+
+How to create a Logical Volume with LVM
+pvcreate /dev/sda1
+pvcreate /dev/sdb1
+vgcreate LinuxVG /dev/sda1
+lvcreate -L 500M -n LinuxLV LinuxVG
+lvs
+mkfs.ext4 /dev/LinuxVG/LinuxLV
+blkid /dev/LinuxVG/LinuxLV
+df -hT
+vgextend LinuxVG /dev/sdb1
+

@@ -1,0 +1,54 @@
+https://unix.stackexchange.com/questions/702151/automatically-mounting-luks-encrypted-volume-during-boot
+
+here's how I got it to work
+
+dd   if=/dev/urandom  of=/root/crypttab.key  bs=1024   count=4
+chmod  400  /root/crypttab.key
+cryptsetup    luksAddkey   UUID=###   /root/crypttab.key
+cryptsetup   -v luksOpen   UUID=###   /root/crypttab.key
+# edit /etc/cryptab manually, each line having:
+    <volume-name>   <encrypted-device>   <key-file>   <options>
+    
+UUID=### is of the luks locked partition as shown in gnome disks or lsblk
+
+don't use /dev/sda1 or the by-name convention because as disks come and go or move in the system your luks encrypted volume could become sdb or sdc and it'll fail; using UUID is reliable
+
+the <volume name> I believe can be anything
+
+I suspect all the conventions allowed in /etc/fstab column 1 for mounting can be used here such as uuid, label, scsi-id... refer to contents under /dev/disk/
+
+for the manual editing of /etc/crypttab
+
+will be a blank file nothing crypttab [or luks] related has been done yet
+
+this file cannot be renamed nor moved to something else
+
+should have permissions root.root and -rw-------
+
+each line for unlocking a given luks locked device has 4 columns
+https://www.freedesktop.org/software/systemd/man/crypttab.html
+     <volume-name>   <encrypted-device>   <key-file>   <options>
+     
+an example could be
+scratch  UUID=abc123  /root/crypttab.key   luks
+the 4th column for would be luks
+
+the cryptsetup -v adds the key file to LUKS, which is independent of the original passphrase used to LUKS encrypt the volume
+
+the cryptsetup -v will prompt for the existing passphrase, so the key I believe is based off the passphrase
+
+if the /root/crypttab.key is compromised, don't know if the original passphrase is safe, I suspect it probably is.
+
+if the /root/crypttab.key is compromised or lost, just need to delete the corresponding entry in /etc/crypttab and revert to using the passphrase or redo cryptsetup with new key
+
+the /root/crypttab.key file can be deleted, as long as you know the original (or current) passphrase used to LUKS encrypt you can unlock and get your data
+
+once this is setup, simply clicking the unlock button in gnome disks utility will unlock the volume without prompting for the passphrase, which is really what needs to happen
+
+the entry in /etc/fstab of mounting the [encrypted] device is actually independent of crypt; nothing LUKS related happens in /etc/fstab
+
+the /root/crypttab.key file can be named anything and located anywhere
+
+the UUID to be used is that of the locked LUKS partition, before it has been unlocked.
+
+with entries in /etc/crypttab present the GNOME disks utility will recognize that and the gnome disks will allow you to change the existing passphrase and it is good enough to indicate it will also update or respect the existing key files.

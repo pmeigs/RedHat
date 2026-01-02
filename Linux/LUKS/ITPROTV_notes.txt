@@ -1,0 +1,65 @@
+##############################################
+WORKING WITH ENCRYPTED STORAGE:
+If you enable LUKS during setup it defaults to 512AES encryption.
+If you enable LUKS after setup then it defaults to 256 encryption.
+The easiest way to get LUKS enabled is during setup.
+
+If you've used the disk that you want to use previously then it recommend that you "shred" the disk.
+sudo shred -v --iterations /dev/sde
+sudo shred -vfz -n 3 /dev/sde
+
+Aftwards, we encrypt the disk to create the container so we can put things in there.
+
+VERY difficult to encrypt drive after setup if option not chosen.
+
+################ WORKS 09-25-2023 ##################
+sudo cryptsetup -v luksFormat /dev/xvdb1
+sudo cryptsetup -v luksFormat /dev/xvdc1
+ 
+sudo cryptsetup luksOpen /dev/xvdb1 ITAR
+sudo cryptsetup luksOpen /dev/xvdc1 ITAR-Backup
+ 
+ls /dev/mapper
+ 
+sudo mkfs.ext4 /dev/mapper/ITAR
+sudo mkfs.ext4 /dev/mapper/ITAR-Backup
+ 
+fstab:
+/dev/mapper/ITAR /home/ITAR ext4 defaults 0 0
+/deb/mapper/ITAR-Backup /home/ITAR-Backup ext4 defaults 0 0
+ 
+crypttab:
+# <target name> <source device>         <key file>      <options>
+ITAR /dev/xvdb1 none
+ITAR-Backup /dev/xvdc1 none
+#######################################
+
+ENCRYPT A VOLUME:
+sudo apt install cryptsetup-bin
+sudo cryptsetup -v luksFormat /dev/sde1
+keyslot 0 is the master key
+sudo cryptsetup luksOpen /dev/sde1 ITAR <----assign an alias
+sudo mkfs.ext4 /dev/mapper/ITAR <-----point to alias in /dev/mapper
+mkdir /mnt/ITAR
+sudo mount /dev/mapper/ITAR /mnt/ITAR
+
+TO AUTOMATICALLY MOUNT AT BOOT:
+If you don't already have a file in /etc then create crypttab
+sudoedit /etc/crypttab
+ITAR <----can just type this
+ITAR /dev/sde1 password123 <-----not good because password is visable.
+IN /ETC/FSTAB:
+/dev/mapper/ITAR /mnt/ITAR ext4 default 0 0
+Peter's crypttab = cryptdata UUID=c323d6fd-c498-4905-a273-09b9baf3f429 none luks
+
+TO ADD A KEY:
+sudo cryptsetup luksAddKey /dev/sde1
+enter your existing passphrase
+enter the additional passphrase for keyslot 1
+password321
+
+TO REMOVE
+sudo cryptsetup luksRemoveKey /dev/sde1
+enter the passphrase for the one your deleting.
+password321 <-----password to be deleted
+##############################################

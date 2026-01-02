@@ -1,0 +1,19 @@
+sudo cryptsetup -v luksFormat /dev/xvdb1
+sudo cryptsetup -v luksFormat /dev/xvdc1
+ 
+sudo cryptsetup luksOpen /dev/xvdb1 ITAR
+sudo cryptsetup luksOpen /dev/xvdc1 ITAR-Backup
+ 
+ls /dev/mapper
+ 
+sudo mkfs.ext4 /dev/mapper/ITAR
+sudo mkfs.ext4 /dev/mapper/ITAR-Backup
+ 
+fstab:
+/dev/mapper/ITAR /home/ITAR ext4 defaults 0 0
+/deb/mapper/ITAR-Backup /home/ITAR-Backup ext4 defaults 0 0
+ 
+crypttab:
+# <target name> <source device>         <key file>      <options>
+ITAR /dev/xvdb1 none
+ITAR-Backup /dev/xvdc1 none
