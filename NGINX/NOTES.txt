@@ -1,0 +1,3 @@
+sudo chown -R nginx: /var/www/
+
+sudo chmod -R 744 /var/www/html/
