@@ -1,3 +1,10 @@
 sudo chown -R nginx: /var/www/
 
 sudo chmod -R 744 /var/www/html/
+
+sudo ls -la /var/www/html/
+total 0
+drwxr--r--. 4 nginx nginx 32 Jan  3 22:19 .
+drwxr-xr-x. 3 nginx nginx 18 Jan  3 22:18 ..
+drwxr--r--. 2 nginx nginx 24 Jan  4 14:47 bandit
+drwxr--r--. 2 nginx nginx 24 Jan  4 14:47 mina
